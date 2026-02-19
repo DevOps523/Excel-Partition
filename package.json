@@ -1,0 +1,24 @@
+{
+  "name": "excel-json-generator",
+  "version": "1.0.0",
+  "description": "Upload Excel files and generate structured JSON output",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "compression": "^1.8.1",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.2"
+  },
+  "overrides": {
+    "minimatch": "^10.2.1",
+    "glob": "^10.5.0",
+    "archiver-utils": "^5.0.2",
+    "zip-stream": "^6.0.1",
+    "rimraf": "^5.0.10"
+  }
+}
