@@ -1577,6 +1577,10 @@ app.use((req, res, next) => {
 
 app.use(express.static(projectRoot, { etag: false, lastModified: false, maxAge: 0 }));
 
+app.get("/", (_req, res) => {
+  return res.sendFile(path.join(projectRoot, "index.html"));
+});
+
 app.get("/download/:folder/:file", async (req, res) => {
   const folder = String(req.params.folder || "").trim();
   const file = String(req.params.file || "").trim();
