@@ -294,6 +294,16 @@
     const trackerTextEl = document.getElementById("trackerText");
     const resultEl = document.getElementById("result");
     let activeJobId = null;
+    const VERCEL_SAFE_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024;
+
+    function isLikelyVercelHost() {
+      return /\.vercel\.app$/i.test(window.location.hostname || "");
+    }
+
+    function formatBytes(bytes) {
+      const mb = Number(bytes || 0) / (1024 * 1024);
+      return `${mb.toFixed(2)} MB`;
+    }
 
     function toggleSplitCountField() {
       const isSplit = String(workbookModeInput.value || "").toLowerCase() === "split";
@@ -424,6 +434,13 @@
         setStatus("Invalid file type. Please upload only .xlsx or .xls files.", true);
         return;
       }
+      if (isLikelyVercelHost() && file.size > VERCEL_SAFE_UPLOAD_LIMIT_BYTES) {
+        setStatus(
+          `File is too large for Vercel serverless upload limit (${formatBytes(file.size)} selected). Use a file under ${formatBytes(VERCEL_SAFE_UPLOAD_LIMIT_BYTES)} or deploy this backend on a host without this limit.`,
+          true
+        );
+        return;
+      }
       const splitCount = Number(splitCountInput.value);
       if (!["single", "multiple", "split"].includes(workbookMode)) {
         setStatus("Invalid workbook mode. Choose Single Workbook, Multiple Workbook, or Split Workbook.", true);
@@ -467,6 +484,14 @@
         }
 
         if (!response.ok) {
+          const isPayloadTooLarge = response.status === 413 || /FUNCTION_PAYLOAD_TOO_LARGE/i.test(rawText);
+          if (isPayloadTooLarge) {
+            setStatus(
+              `Upload exceeds Vercel serverless payload limit. Use a file under ${formatBytes(VERCEL_SAFE_UPLOAD_LIMIT_BYTES)} or move backend processing to a non-serverless host.`,
+              true
+            );
+            return;
+          }
           const message =
             (payload && payload.error) ||
             rawText ||

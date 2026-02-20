@@ -200,6 +200,16 @@
     const folderSourceInput = document.getElementById("folderSourceInput");
     const folderRows = document.getElementById("folderRows");
     let pendingFolderUpload = "";
+    const VERCEL_SAFE_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024;
+
+    function isLikelyVercelHost() {
+      return /\.vercel\.app$/i.test(window.location.hostname || "");
+    }
+
+    function formatBytes(bytes) {
+      const mb = Number(bytes || 0) / (1024 * 1024);
+      return `${mb.toFixed(2)} MB`;
+    }
 
     function setStatus(el, message, isError) {
       el.textContent = message || "";
@@ -249,6 +259,11 @@
       const response = await fetch(url, options);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (response.status === 413) {
+          throw new Error(
+            `Request is too large for Vercel serverless limit. Keep uploads under ${formatBytes(VERCEL_SAFE_UPLOAD_LIMIT_BYTES)}.`
+          );
+        }
         throw new Error(payload.error || `Request failed (${response.status})`);
       }
       return payload;
@@ -258,6 +273,14 @@
       const file = folderSourceInput.files && folderSourceInput.files[0];
       if (!file) {
         setStatus(adminStatus, "Please select a source file first.", true);
+        return;
+      }
+      if (isLikelyVercelHost() && file.size > VERCEL_SAFE_UPLOAD_LIMIT_BYTES) {
+        setStatus(
+          adminStatus,
+          `Selected file is too large for Vercel upload limit (${formatBytes(file.size)}). Keep source files under ${formatBytes(VERCEL_SAFE_UPLOAD_LIMIT_BYTES)}.`,
+          true
+        );
         return;
       }
       const formData = new FormData();
@@ -270,6 +293,11 @@
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
+          if (response.status === 413) {
+            throw new Error(
+              `Upload exceeds Vercel serverless payload limit. Keep source files under ${formatBytes(VERCEL_SAFE_UPLOAD_LIMIT_BYTES)}.`
+            );
+          }
           throw new Error(payload.error || `Upload failed (${response.status})`);
         }
         folderSourceInput.value = "";
